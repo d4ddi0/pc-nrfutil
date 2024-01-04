@@ -58,10 +58,145 @@ class ValidationException(NordicSemiException):
     """
     pass
 
+bleImageArrayCnt=0
+# bleImageArray = [bytearray([0x60,0x09,0x00]),bytearray([0x60,0x02,0x01]), bytearray([0x60,0x07,0x01,0x81,0x00]), bytearray([0x60,0x06,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x87,0x00,0x00,0x00,0x28,0x6e,0xbb,0x9b]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x06,0x01,0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x10,0x00,0x00,0xcc,0x5e,0xd4,0x0c]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x20,0x00,0x00,0xb9,0x1d,0xfa,0x29]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x30,0x00,0x00,0x04,0x12,0xe1,0x11]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x40,0x00,0x00,0x39,0x57,0xe2,0xc9]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x50,0x00,0x00,0x14,0xd9,0xa4,0xc3]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x60,0x00,0x00,0x4f,0x1f,0x1d,0x52]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x70,0x00,0x00,0x58,0x81,0xcf,0x54]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x80,0x00,0x00,0x6c,0x15,0xd4,0x0d]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0x90,0x00,0x00,0x39,0x53,0x9d,0xa9]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x00,0xa0,0x00,0x00,0xfe,0xa8,0x5f,0x3f]), bytearray([0x60,0x04,0x01]), bytearray([0x60,0x01,0x01]), bytearray([0x60,0x03,0x01,0x10,0xab,0x00,0x00,0x10,0xcb,0xe7,0xcf]), bytearray([0x60,0x04,0x01])]
+bleImageArray = []
 
 logger = logging.getLogger(__name__)
 
-class Slip:
+class FakeResponse:
+    LastRx = ""
+
+    @staticmethod
+    def RxData(DataString):
+        FakeResponse.LastRx=DataString
+        # logger.debug("Rx Stuf")
+
+    @staticmethod
+    def GetNextTxData():        
+        logger.debug("GetNextTxData")
+        logger.debug("Last: "+FakeResponse.LastRx)
+        global bleImageArray
+        global bleImageArrayCnt
+        decoded_data = []
+
+        if FakeResponse.LastRx=="0901c0":
+            logger.debug("Response to Ping")
+            decoded_data.append(0x60)
+            decoded_data.append(0x09)
+            decoded_data.append(0x00)
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+        if FakeResponse.LastRx=="020000c0":
+            logger.debug("Response to Set Packet Receipt Notification")
+            decoded_data.append(0x60)
+            decoded_data.append(0x02)
+            decoded_data.append(0x01)
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+        if FakeResponse.LastRx=="07c0":
+            logger.debug("Response to MTU Size")
+            decoded_data.append(0x60)
+            decoded_data.append(0x07)
+            decoded_data.append(0x01)
+            decoded_data.append(0x83)
+            decoded_data.append(0x00)
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+        if FakeResponse.LastRx=="0601c0":
+            logger.debug("Response to Selecting Object1")
+            decoded_data.append(0x60)
+            decoded_data.append(0x06)
+            decoded_data.append(0x01)
+            decoded_data.append(0x00)
+            decoded_data.append(0x01)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+        if FakeResponse.LastRx=="03c0":
+            logger.debug("Response to CalcChecksum")
+            decoded_data.append(0x60)
+            decoded_data.append(0x03)
+            decoded_data.append(0x01)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+        if FakeResponse.LastRx=="03c0":
+            logger.debug("Response to CalcChecksum")
+            decoded_data.append(0x60)
+            decoded_data.append(0x03)
+            decoded_data.append(0x01)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+
+        if FakeResponse.LastRx=="04c0":
+            logger.debug("Response to Execute")
+            decoded_data.append(0x60)
+            decoded_data.append(0x04)
+            decoded_data.append(0x01)
+
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+        if FakeResponse.LastRx=="0602c0":
+            logger.debug("Response to Selecting Object2")
+            decoded_data.append(0x60)
+            decoded_data.append(0x06)
+            decoded_data.append(0x01)
+            decoded_data.append(0x00)
+            decoded_data.append(0x10)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            decoded_data.append(0x00)
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+
+        if FakeResponse.LastRx[:2]=="01":
+            logger.debug("Response to CreateObject")
+            decoded_data.append(0x60)
+            decoded_data.append(0x01)
+            decoded_data.append(0x01)
+            bleImageArrayCnt=bleImageArrayCnt+1
+            return decoded_data
+
+        for x in bleImageArray[bleImageArrayCnt]:
+            decoded_data.append(x)
+        bleImageArrayCnt=bleImageArrayCnt+1
+        return decoded_data
+
+class Slip(object):
     SLIP_BYTE_END             = 0o300
     SLIP_BYTE_ESC             = 0o333
     SLIP_BYTE_ESC_END         = 0o334
@@ -119,31 +254,24 @@ class DFUAdapter:
     def send_message(self, data):
         packet = Slip.encode(data)
         logger.log(TRANSPORT_LOGGING_LEVEL, 'SLIP: --> ' + str(data))
-        try:
-            self.serial_port.write(packet)
-        except SerialException as e:
-            raise NordicSemiException('Writing to serial port failed: ' + str(e) + '. '
-                                      'If MSD is enabled on the target device, try to disable it ref. '
-                                      'https://wiki.segger.com/index.php?title=J-Link-OB_SAM3U')
-
+        
+        byteText =binascii.hexlify(bytearray(packet))
+        outText="(const uint8_t[]){/*Len:*/ "
+        outText+=format(len(packet), '#04x')+",/*Data:*/ "
+        for x in range(0, len(packet)):
+            outText+=format(packet[x], '#04x')+","
+        outText=outText[:len(outText)-1]    
+        outText+="}, \n\n"
+        OutFile.write(outText)
+        global TotalByteArrays
+        TotalByteArrays+=1
+        FakeResponse.RxData(byteText)
+        
     def get_message(self):
         current_state = Slip.SLIP_STATE_DECODING
         finished = False
         decoded_data = []
-
-        while finished == False:
-            byte = self.serial_port.read(1)
-            if byte:
-                (byte) = struct.unpack('B', byte)[0]
-                (finished, current_state, decoded_data) \
-                   = Slip.decode_add_byte(byte, decoded_data, current_state)
-            else:
-                current_state = Slip.SLIP_STATE_CLEARING_INVALID_PACKET
-                return None
-
-        logger.log(TRANSPORT_LOGGING_LEVEL, 'SLIP: <-- ' + str(decoded_data))
-
-        return decoded_data
+        return FakeResponse.GetNextTxData()        
 
 class DfuTransportSerial(DfuTransport):
 
@@ -192,15 +320,26 @@ class DfuTransportSerial(DfuTransport):
 
 
     def open(self):
-        super().open()
-        try:
-            self.__ensure_bootloader()
-            self.serial_port = Serial(port=self.com_port,
-                baudrate=self.baud_rate, rtscts=self.flow_control, timeout=self.DEFAULT_SERIAL_PORT_TIMEOUT)
-            self.dfu_adapter = DFUAdapter(self.serial_port)
-        except OSError as e:
-            raise NordicSemiException("Serial port could not be opened on {0}"
-              ". Reason: {1}".format(self.com_port, e.strerror))
+        super(DfuTransportSerial, self).open()
+
+# THIS IS THE NOKE SECTION
+        logger.debug("Starting up serial!")
+
+        logger.debug("Opening up OutFile: ble_image.c")
+        global OutFile
+        OutFile = open("ble_image.c","w")
+        global TotalByteArrays
+        TotalByteArrays=0
+        st = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        outText="//Generated: "+st+"\n\n"
+        outText+="#include <stdint.h>\n\n"
+        outText+="char bleImageHwType[2] = \"" + self.com_port + "\";\n\n"
+        outText+="const uint8_t *bleImageArray[]={\n"
+        OutFile.write(outText)
+
+        self.dfu_adapter = DFUAdapter(None)
+
+# EO THE NOKE SECTION
 
         if self.do_ping:
             ping_success = False
@@ -217,8 +356,12 @@ class DfuTransportSerial(DfuTransport):
         self.__get_mtu()
 
     def close(self):
-        super().close()
-        self.serial_port.close()
+        super(DfuTransportSerial, self).close()
+# THIS IS THE NOKE SECTION
+        OutFile.write("\n};\n\n")
+        OutFile.write("int bleImageArrayLength={};\n".format(TotalByteArrays))
+        OutFile.close()           
+# EO THE NOKE SECTION
 
     def send_init_packet(self, init_packet):
         def try_to_recover():
@@ -355,12 +498,14 @@ class DfuTransportSerial(DfuTransport):
 
     def __set_prn(self):
         logger.debug("Serial: Set Packet Receipt Notification {}".format(self.prn))
+        OutFile.write("//Serial: Set Packet Receipt Notification\n")
         self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['SetPRN']]
             + list(struct.pack('<H', self.prn)))
         self.__get_response(DfuTransportSerial.OP_CODE['SetPRN'])
 
     def __get_mtu(self):
         self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['GetSerialMTU']])
+        OutFile.write("//MTU\n")
         response = self.__get_response(DfuTransportSerial.OP_CODE['GetSerialMTU'])
 
         self.mtu = struct.unpack('<H', bytearray(response))[0]
@@ -368,6 +513,7 @@ class DfuTransportSerial(DfuTransport):
     def __ping(self):
         self.ping_id = (self.ping_id + 1) % 256
 
+        OutFile.write("//Ping\n")
         self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['Ping'], self.ping_id])
         resp = self.dfu_adapter.get_message() # Receive raw response to check return code
 
@@ -385,6 +531,7 @@ class DfuTransportSerial(DfuTransport):
             return False
 
         if resp[2] != DfuTransport.RES_CODE['Success']:
+            OutFile.write("//Rx Success\n")
             # Returning an error code is seen as good enough. The bootloader is up and running
             return True
         else:
@@ -400,11 +547,13 @@ class DfuTransportSerial(DfuTransport):
         self.__create_object(0x02, size)
 
     def __create_object(self, object_type, size):
+        OutFile.write("//CreateObject\n")
         self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['CreateObject'], object_type]\
                                             + list(struct.pack('<L', size)))
         self.__get_response(DfuTransportSerial.OP_CODE['CreateObject'])
 
     def __calculate_checksum(self):
+        OutFile.write("//CalcChecSum\n")
         self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['CalcChecSum']])
         response = self.__get_response(DfuTransportSerial.OP_CODE['CalcChecSum'])
 
@@ -417,6 +566,7 @@ class DfuTransportSerial(DfuTransport):
         return {'offset': offset, 'crc': crc}
 
     def __execute(self):
+        OutFile.write("//Execute\n")
         self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['Execute']])
         self.__get_response(DfuTransportSerial.OP_CODE['Execute'])
 
@@ -427,6 +577,7 @@ class DfuTransportSerial(DfuTransport):
         return self.__select_object(0x02)
 
     def __select_object(self, object_type):
+        OutFile.write("//Serial: Selecting Object{}\n".format(object_type))
         logger.debug("Serial: Selecting Object: type:{}".format(object_type))
         self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['ReadObject'], object_type])
 
@@ -447,13 +598,8 @@ class DfuTransportSerial(DfuTransport):
         logger.debug("Serial: Streaming Data: " +
             "len:{0} offset:{1} crc:0x{2:08X}".format(len(data), offset, crc))
         def validate_crc():
-            if (crc != response['crc']):
-                raise ValidationException('Failed CRC validation.\n'\
-                                + 'Expected: {} Received: {}.'.format(crc, response['crc']))
-            if (offset != response['offset']):
-                raise ValidationException('Failed offset validation.\n'\
-                                + 'Expected: {} Received: {}.'.format(offset, response['offset']))
-
+            logger.debug("validate_crc, ignore")
+            
         current_pnr     = 0
 
         for i in range(0, len(data), (self.mtu-1)//2 - 1):
@@ -492,6 +638,17 @@ class DfuTransportSerial(DfuTransport):
                              + 'Expected: 0x{:02X} Received: 0x{:02X}'.format(operation, resp[1]))
 
         if resp[2] == DfuTransport.RES_CODE['Success']:
+            OutFile.write("//Rx Success\n")
+            OutFile.write("//Resp\n")
+
+            byteText =binascii.hexlify(bytearray(resp))
+            outText="// (const uint8_t[]){/*Len:*/ "
+            outText+=format(len(resp), '#04x')+",/*Data:*/ "
+            for x in range(0, len(resp)):
+                outText+=format(resp[x], '#04x')+","
+            outText=outText[:len(outText)-1]    
+            outText+="}, \n\n"
+            OutFile.write(outText)
             return resp[3:]
 
         elif resp[2] == DfuTransport.RES_CODE['ExtendedError']:

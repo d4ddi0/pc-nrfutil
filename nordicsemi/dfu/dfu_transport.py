@@ -50,7 +50,7 @@ TRANSPORT_LOGGING_LEVEL = 5
 
 class DfuEvent:
     PROGRESS_EVENT = 1
-
+    TRANSPORT_LOGGING_LEVEL = 5
 
 class DfuTransport(ABC):
     """
