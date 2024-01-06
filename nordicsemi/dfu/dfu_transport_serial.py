@@ -75,26 +75,26 @@ class FakeResponse:
     @staticmethod
     def GetNextTxData():        
         logger.debug("GetNextTxData")
-        logger.debug("Last: "+FakeResponse.LastRx)
+        logger.debug("Last: " + FakeResponse.LastRx.decode('utf-8'))
         global bleImageArray
         global bleImageArrayCnt
         decoded_data = []
 
-        if FakeResponse.LastRx=="0901c0":
+        if FakeResponse.LastRx==b"0901c0":
             logger.debug("Response to Ping")
             decoded_data.append(0x60)
             decoded_data.append(0x09)
             decoded_data.append(0x00)
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
-        if FakeResponse.LastRx=="020000c0":
+        if FakeResponse.LastRx==b"020000c0":
             logger.debug("Response to Set Packet Receipt Notification")
             decoded_data.append(0x60)
             decoded_data.append(0x02)
             decoded_data.append(0x01)
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
-        if FakeResponse.LastRx=="07c0":
+        if FakeResponse.LastRx==b"07c0":
             logger.debug("Response to MTU Size")
             decoded_data.append(0x60)
             decoded_data.append(0x07)
@@ -103,7 +103,7 @@ class FakeResponse:
             decoded_data.append(0x00)
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
-        if FakeResponse.LastRx=="0601c0":
+        if FakeResponse.LastRx==b"0601c0":
             logger.debug("Response to Selecting Object1")
             decoded_data.append(0x60)
             decoded_data.append(0x06)
@@ -122,7 +122,7 @@ class FakeResponse:
             decoded_data.append(0x00)
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
-        if FakeResponse.LastRx=="03c0":
+        if FakeResponse.LastRx==b"03c0":
             logger.debug("Response to CalcChecksum")
             decoded_data.append(0x60)
             decoded_data.append(0x03)
@@ -138,7 +138,7 @@ class FakeResponse:
 
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
-        if FakeResponse.LastRx=="03c0":
+        if FakeResponse.LastRx==b"03c0":
             logger.debug("Response to CalcChecksum")
             decoded_data.append(0x60)
             decoded_data.append(0x03)
@@ -155,7 +155,7 @@ class FakeResponse:
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
 
-        if FakeResponse.LastRx=="04c0":
+        if FakeResponse.LastRx==b"04c0":
             logger.debug("Response to Execute")
             decoded_data.append(0x60)
             decoded_data.append(0x04)
@@ -163,7 +163,7 @@ class FakeResponse:
 
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
-        if FakeResponse.LastRx=="0602c0":
+        if FakeResponse.LastRx==b"0602c0":
             logger.debug("Response to Selecting Object2")
             decoded_data.append(0x60)
             decoded_data.append(0x06)
@@ -183,13 +183,16 @@ class FakeResponse:
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
 
-        if FakeResponse.LastRx[:2]=="01":
+        if FakeResponse.LastRx[:2]==b"01":
             logger.debug("Response to CreateObject")
             decoded_data.append(0x60)
             decoded_data.append(0x01)
             decoded_data.append(0x01)
             bleImageArrayCnt=bleImageArrayCnt+1
             return decoded_data
+
+        if (len(bleImageArray) <= bleImageArrayCnt):
+            raise NordicSemiException("No FakeResponse for " + FakeResponse.LastRx.decode('utf-8'))
 
         for x in bleImageArray[bleImageArrayCnt]:
             decoded_data.append(x)
