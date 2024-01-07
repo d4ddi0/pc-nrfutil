@@ -276,7 +276,7 @@ class DFUAdapter:
         decoded_data = []
         return FakeResponse.GetNextTxData()
 
-class DfuTransportSerial(DfuTransport):
+class DfuTransportFakeSerial(DfuTransport):
 
     DEFAULT_BAUD_RATE = 115200
     DEFAULT_FLOW_CONTROL = True
@@ -299,7 +299,8 @@ class DfuTransportSerial(DfuTransport):
     }
 
     def __init__(self,
-                 com_port,
+                 outputfile,
+                 hardwaretype,
                  baud_rate=DEFAULT_BAUD_RATE,
                  flow_control=DEFAULT_FLOW_CONTROL,
                  timeout=DEFAULT_TIMEOUT,
@@ -307,7 +308,8 @@ class DfuTransportSerial(DfuTransport):
                  do_ping=DEFAULT_DO_PING):
 
         super().__init__()
-        self.com_port = com_port
+        self.outputfile = outputfile
+        self.hardwaretype = hardwaretype
         self.baud_rate = baud_rate
         self.flow_control = 1 if flow_control else 0
         self.timeout = timeout
@@ -323,20 +325,20 @@ class DfuTransportSerial(DfuTransport):
 
 
     def open(self):
-        super(DfuTransportSerial, self).open()
+        super(DfuTransportFakeSerial, self).open()
 
 # THIS IS THE NOKE SECTION
         logger.debug("Starting up serial!")
 
-        logger.debug("Opening up OutFile: ble_image.c")
+        logger.debug(f"Opening up OutFile: {self.outputfile}")
         global OutFile
-        OutFile = open("ble_image.c","w")
+        OutFile = open(self.outputfile,"w")
         global TotalByteArrays
         TotalByteArrays=0
         st = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
         outText="//Generated: "+st+"\n\n"
         outText+="#include <stdint.h>\n\n"
-        outText+="char bleImageHwType[2] = \"" + self.com_port + "\";\n\n"
+        outText+="char bleImageHwType[2] = \"" + self.hardwaretype + "\";\n\n"
         outText+="const uint8_t *bleImageArray[]={\n"
         OutFile.write(outText)
 
@@ -359,7 +361,7 @@ class DfuTransportSerial(DfuTransport):
         self.__get_mtu()
 
     def close(self):
-        super(DfuTransportSerial, self).close()
+        super(DfuTransportFakeSerial, self).close()
 # THIS IS THE NOKE SECTION
         OutFile.write("\n};\n\n")
         OutFile.write("int bleImageArrayLength={};\n".format(TotalByteArrays))
@@ -458,7 +460,7 @@ class DfuTransportSerial(DfuTransport):
         start = datetime.now()
         while not device and datetime.now() - start < timedelta(seconds=self.timeout):
             time.sleep(0.5)
-            device = lister.get_device(com=self.com_port)
+            device = lister.get_device(com=self.hardwaretype)
 
         if device:
             device_serial_number = device.serial_number
@@ -473,18 +475,6 @@ class DfuTransportSerial(DfuTransport):
                     logger.info("Serial: DFU bootloader was triggered")
                 except NordicSemiException as err:
                     logger.error(err)
-
-
-                for checks in range(retry_count):
-                    logger.info("Serial: Waiting {} ms for device to enter bootloader {}/{} time"\
-                    .format(500, checks + 1, retry_count))
-
-                    time.sleep(wait_time_ms / 1000.0)
-
-                    device = lister.get_device(serial_number=device_serial_number)
-                    if self.__is_device_in_bootloader_mode(device):
-                        self.com_port = device.get_first_available_com_port()
-                        break
 
                 trigger.clean()
             if not self.__is_device_in_bootloader_mode(device):
@@ -502,14 +492,14 @@ class DfuTransportSerial(DfuTransport):
     def __set_prn(self):
         logger.debug("Serial: Set Packet Receipt Notification {}".format(self.prn))
         OutFile.write("//Serial: Set Packet Receipt Notification\n")
-        self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['SetPRN']]
+        self.dfu_adapter.send_message([DfuTransportFakeSerial.OP_CODE['SetPRN']]
             + list(struct.pack('<H', self.prn)))
-        self.__get_response(DfuTransportSerial.OP_CODE['SetPRN'])
+        self.__get_response(DfuTransportFakeSerial.OP_CODE['SetPRN'])
 
     def __get_mtu(self):
-        self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['GetSerialMTU']])
+        self.dfu_adapter.send_message([DfuTransportFakeSerial.OP_CODE['GetSerialMTU']])
         OutFile.write("//MTU\n")
-        response = self.__get_response(DfuTransportSerial.OP_CODE['GetSerialMTU'])
+        response = self.__get_response(DfuTransportFakeSerial.OP_CODE['GetSerialMTU'])
 
         self.mtu = struct.unpack('<H', bytearray(response))[0]
 
@@ -517,20 +507,20 @@ class DfuTransportSerial(DfuTransport):
         self.ping_id = (self.ping_id + 1) % 256
 
         OutFile.write("//Ping\n")
-        self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['Ping'], self.ping_id])
+        self.dfu_adapter.send_message([DfuTransportFakeSerial.OP_CODE['Ping'], self.ping_id])
         resp = self.dfu_adapter.get_message() # Receive raw response to check return code
 
         if not resp:
             logger.debug('Serial: No ping response')
             return False
 
-        if resp[0] != DfuTransportSerial.OP_CODE['Response']:
+        if resp[0] != DfuTransportFakeSerial.OP_CODE['Response']:
             logger.debug('Serial: No Response: 0x{:02X}'.format(resp[0]))
             return False
 
-        if resp[1] != DfuTransportSerial.OP_CODE['Ping']:
+        if resp[1] != DfuTransportFakeSerial.OP_CODE['Ping']:
             logger.debug('Serial: Unexpected Executed OP_CODE.\n' \
-                + 'Expected: 0x{:02X} Received: 0x{:02X}'.format(DfuTransportSerial.OP_CODE['Ping'], resp[1]))
+                + 'Expected: 0x{:02X} Received: 0x{:02X}'.format(DfuTransportFakeSerial.OP_CODE['Ping'], resp[1]))
             return False
 
         if resp[2] != DfuTransport.RES_CODE['Success']:
@@ -551,14 +541,14 @@ class DfuTransportSerial(DfuTransport):
 
     def __create_object(self, object_type, size):
         OutFile.write("//CreateObject\n")
-        self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['CreateObject'], object_type]\
+        self.dfu_adapter.send_message([DfuTransportFakeSerial.OP_CODE['CreateObject'], object_type]\
                                             + list(struct.pack('<L', size)))
-        self.__get_response(DfuTransportSerial.OP_CODE['CreateObject'])
+        self.__get_response(DfuTransportFakeSerial.OP_CODE['CreateObject'])
 
     def __calculate_checksum(self):
         OutFile.write("//CalcChecSum\n")
-        self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['CalcChecSum']])
-        response = self.__get_response(DfuTransportSerial.OP_CODE['CalcChecSum'])
+        self.dfu_adapter.send_message([DfuTransportFakeSerial.OP_CODE['CalcChecSum']])
+        response = self.__get_response(DfuTransportFakeSerial.OP_CODE['CalcChecSum'])
 
         if response is None:
             raise NordicSemiException('Did not receive checksum response from DFU target. '
@@ -570,8 +560,8 @@ class DfuTransportSerial(DfuTransport):
 
     def __execute(self):
         OutFile.write("//Execute\n")
-        self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['Execute']])
-        self.__get_response(DfuTransportSerial.OP_CODE['Execute'])
+        self.dfu_adapter.send_message([DfuTransportFakeSerial.OP_CODE['Execute']])
+        self.__get_response(DfuTransportFakeSerial.OP_CODE['Execute'])
 
     def __select_command(self):
         return self.__select_object(0x01)
@@ -582,9 +572,9 @@ class DfuTransportSerial(DfuTransport):
     def __select_object(self, object_type):
         OutFile.write("//Serial: Selecting Object{}\n".format(object_type))
         logger.debug("Serial: Selecting Object: type:{}".format(object_type))
-        self.dfu_adapter.send_message([DfuTransportSerial.OP_CODE['ReadObject'], object_type])
+        self.dfu_adapter.send_message([DfuTransportFakeSerial.OP_CODE['ReadObject'], object_type])
 
-        response = self.__get_response(DfuTransportSerial.OP_CODE['ReadObject'])
+        response = self.__get_response(DfuTransportFakeSerial.OP_CODE['ReadObject'])
         (max_size, offset, crc)= struct.unpack('<III', bytearray(response))
 
         logger.debug("Serial: Object selected: " +
@@ -592,7 +582,7 @@ class DfuTransportSerial(DfuTransport):
         return {'max_size': max_size, 'offset': offset, 'crc': crc}
 
     def __get_checksum_response(self):
-        resp = self.__get_response(DfuTransportSerial.OP_CODE['CalcChecSum'])
+        resp = self.__get_response(DfuTransportFakeSerial.OP_CODE['CalcChecSum'])
 
         (offset, crc) = struct.unpack('<II', bytearray(resp))
         return {'offset': offset, 'crc': crc}
@@ -610,7 +600,7 @@ class DfuTransportSerial(DfuTransport):
             # here the maximum data size is self.mtu/2,
             # due to the slip encoding which at maximum doubles the size
             to_transmit = data[i:i + (self.mtu-1)//2 - 1 ]
-            to_transmit = struct.pack('B',DfuTransportSerial.OP_CODE['WriteObject']) + to_transmit
+            to_transmit = struct.pack('B',DfuTransportFakeSerial.OP_CODE['WriteObject']) + to_transmit
 
             self.dfu_adapter.send_message(list(to_transmit))
             crc     = binascii.crc32(to_transmit[1:], crc) & 0xFFFFFFFF
@@ -633,7 +623,7 @@ class DfuTransportSerial(DfuTransport):
         if not resp:
             return None
 
-        if resp[0] != DfuTransportSerial.OP_CODE['Response']:
+        if resp[0] != DfuTransportFakeSerial.OP_CODE['Response']:
             raise NordicSemiException('No Response: 0x{:02X}'.format(resp[0]))
 
         if resp[1] != operation:

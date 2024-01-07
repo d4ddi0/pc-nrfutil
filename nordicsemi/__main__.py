@@ -50,6 +50,7 @@ from nordicsemi.dfu.bl_dfu_sett import BLDFUSettings
 from nordicsemi.dfu.dfu import Dfu
 from nordicsemi.dfu.dfu_transport import DfuEvent, TRANSPORT_LOGGING_LEVEL
 from nordicsemi.dfu.dfu_transport_serial import DfuTransportSerial
+from nordicsemi.dfu.dfu_transport_fakeserial import DfuTransportFakeSerial
 from nordicsemi.dfu.package import Package
 from nordicsemi import version as nrfutil_version
 from nordicsemi.dfu.signing import Signing
@@ -1072,6 +1073,45 @@ def serial(package, port, connect_delay, flow_control, packet_receipt_notificati
 
     do_serial(package, port, connect_delay, flow_control, packet_receipt_notification, baud_rate, serial_number, True,
               timeout)
+
+
+@dfu.command(short_help="Craft a C datafile containg a fake dfu session that can be blindly replayed as a sort of brute force dfu from one MCU to another")
+@click.option('-pkg', '--package',
+              help='Filename of the DFU package.',
+              type=click.Path(exists=True, resolve_path=True, file_okay=True, dir_okay=False),
+              required=True)
+@click.option('-o', '--output',
+              help='Name of a C file to output',
+              type=click.Path(file_okay=True, dir_okay=False),
+              required=True)
+@click.option('-ht', '--hardwaretype',
+              help='A string identifying the hardware type so we don\'t try to download the wrong image',
+              type=click.STRING,
+              required=True)
+def fakeserial(package, output, hardwaretype):
+    """Pretend to perform a Device Firmware Update and put the result in C arrays"""
+    flow_control = DfuTransportFakeSerial.DEFAULT_FLOW_CONTROL
+    packet_receipt_notification = DfuTransportFakeSerial.DEFAULT_PRN
+    baud_rate = DfuTransportFakeSerial.DEFAULT_BAUD_RATE
+    ping = True
+
+    timeout = DfuTransportSerial.DEFAULT_TIMEOUT
+
+    serial_backend = DfuTransportFakeSerial(outputfile=output, hardwaretype=hardwaretype, baud_rate=baud_rate,
+                                        flow_control=flow_control, prn=packet_receipt_notification, do_ping=ping,
+                                        timeout=timeout)
+    serial_backend.register_events_callback(DfuEvent.PROGRESS_EVENT, update_progress)
+    dfu = Dfu(zip_file_path = package, dfu_transport = serial_backend, connect_delay = 0)
+
+    if logger.getEffectiveLevel() > logging.INFO:
+        with click.progressbar(length=dfu.dfu_get_total_size()) as bar:
+            global global_bar
+            global_bar = bar
+            dfu.dfu_send_images()
+    else:
+        dfu.dfu_send_images()
+
+    click.echo("Device programmed.")
 
 
 def enumerate_ports():
